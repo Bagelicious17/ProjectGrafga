@@ -231,6 +231,7 @@
             name: "Knight",
             spriteColor: 'silver',
             sprite: 'assets/sprites/characters/Knight.png',
+            animations: { walk: { src: 'assets/sprites/characters/Knight_walk.png', frameWidth: 64, frameHeight: 64, frames: 4, fps: 8 } },
             stats: { speed: 200, maxHealth: 100, magnet: 1, luck: 1 },
             startingWeapon: "Whip"
         },
@@ -238,6 +239,7 @@
             name: "Mage",
             spriteColor: 'aqua',
             sprite: 'assets/sprites/characters/Mage.png',
+            animations: { walk: { src: 'assets/sprites/characters/Mage_walk.png', frameWidth: 64, frameHeight: 64, frames: 4, fps: 8 } },
             stats: { speed: 180, maxHealth: 80, magnet: 1.2, luck: 1.1 },
             startingWeapon: "MagicWand"
         },
@@ -245,6 +247,7 @@
             name: "Ranger",
             spriteColor: '#2ecc71',
             sprite: 'assets/sprites/characters/Ranger.png',
+            animations: { walk: { src: 'assets/sprites/characters/Ranger_walk.png', frameWidth: 64, frameHeight: 64, frames: 4, fps: 10 } },
             stats: { speed: 220, maxHealth: 90, magnet: 1, luck: 1.2 },
             startingWeapon: "Axe"
         }
@@ -255,6 +258,7 @@
         Whip: {
             name: "Whip",
             type: 'attack',
+            attackSprite: 'assets/sprites/weapons/whip.png',
             levels: [
                 { cooldown: 1.5, damage: 10, area: 1, amount: 1, info: "Attacks horizontally." },
                 { damage: 15, info: "+5 Damage" },
@@ -267,7 +271,7 @@
         MagicWand: {
             name: "Magic Wand",
             type: 'projectile',
-            projectile: { speed: 300, size: 10, pierce: 0, lifespan: 1.5, sprite: 'assets/sprites/projectiles/magic_bolt.png' },
+            projectile: { speed: 300, size: 20, pierce: 0, lifespan: 1.5, sprite: 'assets/sprites/projectiles/magic_bolt.png' },
             levels: [
                 { cooldown: 1, damage: 10, amount: 1, info: "Fires at nearest enemy." },
                 { amount: 2, info: "+1 Projectile" },
@@ -280,7 +284,7 @@
         Axe: {
             name: "Axe",
             type: 'projectile',
-            projectile: { speed: 200, size: 15, pierce: 2, arc: true, lifespan: 2, sprite: 'assets/sprites/projectiles/axe.png' },
+            projectile: { speed: 200, size: 30, pierce: 2, arc: true, lifespan: 2, sprite: 'assets/sprites/projectiles/axe.png' },
             levels: [
                 { cooldown: 2.5, damage: 25, amount: 1, info: "Throws an arcing axe." },
                 { amount: 2, info: "+1 Projectile" },
@@ -295,18 +299,18 @@
             type: 'aura',
             auraSprite: 'assets/sprites/effects/garlic_aura.png',
             levels: [
-                { cooldown: 1, damage: 5, area: 75, knockback: 50, info: "Damages nearby enemies." },
-                { area: 100, info: "+25% Area" },
+                { cooldown: 1, damage: 5, area: 150, info: "Damages nearby enemies." },
+                { area: 200, info: "+25% Area" },
                 { damage: 8, info: "+3 Damage" },
                 { cooldown: 0.8, info: "-20% Cooldown" },
-                { area: 125, info: "+25% Area" },
+                { area: 250, info: "+25% Area" },
                 { damage: 12, info: "+4 Damage" },
             ]
         },
         HolyWater: {
             name: "Holy Water",
             type: 'area',
-            areaData: { duration: 3, size: 80, dps: 10 },
+            areaData: { duration: 3, size: 160, dps: 10 },
             levels: [
                 { cooldown: 3, amount: 1, info: "Tosses a bottle creating a damaging zone." },
                 { duration: 4, info: "+1s Duration" },
@@ -367,22 +371,22 @@
     const ENEMIES = {
         Bat: {
             name: 'Bat',
-            health: 10, speed: 100, damage: 5, size: 20,
+            health: 10, speed: 100, damage: 5, size: 40,
             xp: 2, spriteColor: '#8e44ad', sprite: 'assets/sprites/enemies/Bat.png', count: 0
         },
         Skeleton: {
             name: 'Skeleton',
-            health: 30, speed: 60, damage: 10, size: 25,
+            health: 30, speed: 60, damage: 10, size: 50,
             xp: 5, spriteColor: '#bdc3c7', sprite: 'assets/sprites/enemies/Skeleton.png', count: 0
         },
         Goblin: {
             name: 'Goblin',
-            health: 20, speed: 150, damage: 8, size: 18,
+            health: 20, speed: 150, damage: 8, size: 36,
             xp: 3, spriteColor: '#16a085', sprite: 'assets/sprites/enemies/Goblin.png', count: 0
         },
         Boss: {
             name: 'Boss',
-            health: 500, speed: 40, damage: 25, size: 50,
+            health: 500, speed: 40, damage: 25, size: 100,
             xp: 100, spriteColor: '#c0392b', sprite: 'assets/sprites/enemies/Boss.png', count: 0
         }
     };
@@ -427,7 +431,7 @@
 
     class Player extends GameObject {
         constructor(x, y, characterData) {
-            super(x, y, 30, 30);
+            super(x, y, 60, 60);
             this.charData = characterData;
             this.baseStats = { ...characterData.stats };
             this.passives = {};
@@ -439,6 +443,10 @@
             this.spriteColor = characterData.spriteColor;
             this.invincible = false;
             this.invincibleTimer = 0;
+            this.facing = 1; // 1 = right, -1 = left
+            this.moving = false;
+            this.animFrame = 0;
+            this.animTimer = 0;
         }
 
         // Apply passive buffs to base stats
@@ -478,9 +486,27 @@
             if (keys['d'] || keys['ArrowRight']) dx += 1;
 
             if (dx !== 0 || dy !== 0) {
+                if (dx !== 0) this.facing = dx > 0 ? 1 : -1;
                 const magnitude = Math.sqrt(dx * dx + dy * dy);
                 this.x += (dx / magnitude) * this.speed * dt;
                 this.y += (dy / magnitude) * this.speed * dt;
+            }
+            this.moving = (dx !== 0 || dy !== 0);
+
+            if (this.charData && this.charData.animations && this.charData.animations.walk) {
+                const cfg = this.charData.animations.walk;
+                const fps = cfg.fps || 8;
+                if (this.moving) {
+                    this.animTimer += dt;
+                    const frameTime = 1 / fps;
+                    while (this.animTimer >= frameTime) {
+                        this.animTimer -= frameTime;
+                        this.animFrame = (this.animFrame + 1) % (cfg.frames || 1);
+                    }
+                } else {
+                    this.animFrame = 0;
+                    this.animTimer = 0;
+                }
             }
             
             // Invincibility frames
@@ -524,26 +550,68 @@
             const px = this.x - this.width / 2 - camera.x;
             const py = this.y - this.height / 2 - camera.y;
             const flicker = this.invincible && Math.floor(this.invincibleTimer * 10) % 2 === 0;
-
-            if (!this.spriteImg && this.charData && this.charData.sprite) {
-                this.spriteImg = new Image();
-                this.spriteReady = false;
-                this.spriteImg.onload = () => { this.spriteReady = true; };
-                this.spriteImg.src = this.charData.sprite;
-            }
-
-            if (this.spriteImg && this.spriteReady) {
-                if (flicker) {
+            const cfg = this.charData && this.charData.animations && this.charData.animations.walk;
+            if (cfg && cfg.src) {
+                if (!this.animImg) {
+                    this.animImg = new Image();
+                    this.animReady = false;
+                    this.animImg.onload = () => { this.animReady = true; };
+                    this.animImg.src = cfg.src;
+                }
+                if (this.animImg && this.animReady) {
+                    const fw = cfg.frameWidth || this.width;
+                    const fh = cfg.frameHeight || this.height;
+                    const frames = cfg.frames || 1;
+                    const frameIndex = Math.min(this.animFrame || 0, frames - 1);
+                    const sx = (frameIndex % frames) * fw;
+                    const sy = 0;
                     ctx.save();
-                    ctx.globalAlpha = 0.5;
-                    ctx.drawImage(this.spriteImg, px, py, this.width, this.height);
+                    ctx.translate(px + this.width / 2, py + this.height / 2);
+                    ctx.scale(this.facing, 1);
+                    if (flicker) ctx.globalAlpha = 0.6;
+                    ctx.drawImage(this.animImg, sx, sy, fw, fh, -this.width / 2, -this.height / 2, this.width, this.height);
                     ctx.restore();
                 } else {
-                    ctx.drawImage(this.spriteImg, px, py, this.width, this.height);
+                    if (!this.spriteImg && this.charData && this.charData.sprite) {
+                        this.spriteImg = new Image();
+                        this.spriteReady = false;
+                        this.spriteImg.onload = () => { this.spriteReady = true; };
+                        this.spriteImg.src = this.charData.sprite;
+                    }
+                    if (this.spriteImg && this.spriteReady) {
+                        if (flicker) {
+                            ctx.save();
+                            ctx.globalAlpha = 0.5;
+                            ctx.drawImage(this.spriteImg, px, py, this.width, this.height);
+                            ctx.restore();
+                        } else {
+                            ctx.drawImage(this.spriteImg, px, py, this.width, this.height);
+                        }
+                    } else {
+                        ctx.fillStyle = flicker ? 'white' : this.spriteColor;
+                        ctx.fillRect(px, py, this.width, this.height);
+                    }
                 }
             } else {
-                ctx.fillStyle = flicker ? 'white' : this.spriteColor;
-                ctx.fillRect(px, py, this.width, this.height);
+                if (!this.spriteImg && this.charData && this.charData.sprite) {
+                    this.spriteImg = new Image();
+                    this.spriteReady = false;
+                    this.spriteImg.onload = () => { this.spriteReady = true; };
+                    this.spriteImg.src = this.charData.sprite;
+                }
+                if (this.spriteImg && this.spriteReady) {
+                    if (flicker) {
+                        ctx.save();
+                        ctx.globalAlpha = 0.5;
+                        ctx.drawImage(this.spriteImg, px, py, this.width, this.height);
+                        ctx.restore();
+                    } else {
+                        ctx.drawImage(this.spriteImg, px, py, this.width, this.height);
+                    }
+                } else {
+                    ctx.fillStyle = flicker ? 'white' : this.spriteColor;
+                    ctx.fillRect(px, py, this.width, this.height);
+                }
             }
         }
     }
@@ -604,7 +672,7 @@
 
     class ExperienceGem extends GameObject {
         constructor(x, y, value) {
-            super(x, y, 10, 10);
+            super(x, y, 20, 20);
             this.value = value;
             this.speed = 300;
         }
@@ -615,7 +683,7 @@
             const dist = Math.sqrt(dx * dx + dy * dy);
 
             if (dist < player.magnet) {
-                if (dist < 10) { // Close enough to collect
+                if (dist < 20) { // Close enough to collect (scaled for larger gem)
                     this.active = false;
                     player.gainXP(this.value);
                 } else {
@@ -637,12 +705,14 @@
             if (this.spriteImg && this.spriteReady) {
                 ctx.drawImage(this.spriteImg, px, py, this.width, this.height);
             } else {
+                const hx = this.width / 2;
+                const hy = this.height / 2;
                 ctx.fillStyle = 'cyan';
                 ctx.beginPath();
-                ctx.moveTo(this.x - camera.x, this.y - 5 - camera.y);
-                ctx.lineTo(this.x + 5 - camera.x, this.y - camera.y);
-                ctx.lineTo(this.x - camera.x, this.y + 5 - camera.y);
-                ctx.lineTo(this.x - 5 - camera.x, this.y - camera.y);
+                ctx.moveTo(this.x - camera.x, this.y - hy - camera.y);
+                ctx.lineTo(this.x + hx - camera.x, this.y - camera.y);
+                ctx.lineTo(this.x - camera.x, this.y + hy - camera.y);
+                ctx.lineTo(this.x - hx - camera.x, this.y - camera.y);
                 ctx.closePath();
                 ctx.fill();
             }
@@ -753,6 +823,7 @@
             this.level = 0;
             this.lastFired = 0;
             this.orbitAngle = Math.random() * Math.PI * 2;
+            this.attackEffects = [];
             this.levelUp();
         }
         
@@ -784,6 +855,12 @@
             if (this.data.type === 'orbit') {
                 this.orbitAngle += (stats.orbitSpeed || 1) * dt;
             }
+
+            // Update temporary melee effects (e.g., whip swings)
+            if (this.attackEffects && this.attackEffects.length) {
+                this.attackEffects.forEach(e => e.t -= dt);
+                this.attackEffects = this.attackEffects.filter(e => e.t > 0);
+            }
         }
         
         fire(stats) {
@@ -791,16 +868,26 @@
             
             switch(this.data.type) {
                 case 'attack': { // Whip
-                    for(let i=0; i<stats.amount; i++) {
-                        const dir = (i % 2 === 0) ? 1 : -1;
+                    const baseDir = this.player.facing || 1;
+                    const dirs = (stats.amount >= 2) ? [baseDir, -baseDir] : [baseDir];
+                    dirs.forEach(dir => {
                         const attackArea = {
-                            x: this.player.x + (dir * 75 * stats.area),
+                            x: this.player.x + (dir * 150 * (stats.area || 1)),
                             y: this.player.y,
-                            width: 150 * stats.area,
-                            height: 30
+                            width: 300 * (stats.area || 1),
+                            height: 60
                         };
                         game.checkAttackCollision(attackArea, stats.damage);
-                    }
+                        // Add visual whip effect
+                        this.attackEffects.push({
+                            x: attackArea.x,
+                            y: attackArea.y,
+                            w: attackArea.width,
+                            h: attackArea.height,
+                            dir: dir,
+                            t: 0.12
+                        });
+                    });
                     break;
                 }
                 case 'projectile': { // Magic Wand, Axe
@@ -828,6 +915,33 @@
         draw(ctx, camera) {
              const stats = this.getStats();
              switch(this.data.type) {
+                 case 'attack': // Whip
+                    if (!this.whipImg && this.data.attackSprite) {
+                        this.whipImg = new Image();
+                        this.whipReady = false;
+                        this.whipImg.onload = () => { this.whipReady = true; };
+                        this.whipImg.src = this.data.attackSprite;
+                    }
+                    if (this.attackEffects && this.attackEffects.length) {
+                        this.attackEffects.forEach(e => {
+                            const cx = e.x - camera.x;
+                            const cy = e.y - camera.y;
+                            ctx.save();
+                            ctx.translate(cx, cy);
+                            ctx.scale(e.dir, 1);
+                            if (this.whipImg && this.whipReady) {
+                                ctx.globalAlpha = Math.max(0, Math.min(1, e.t / 0.12));
+                                ctx.drawImage(this.whipImg, -e.w / 2, -e.h / 2, e.w, e.h);
+                            } else {
+                                ctx.globalAlpha = 0.3;
+                                ctx.fillStyle = 'white';
+                                ctx.fillRect(-e.w / 2, -e.h / 2, e.w, e.h);
+                            }
+                            ctx.restore();
+                        });
+                        ctx.globalAlpha = 1;
+                    }
+                    break;
                  case 'aura': // Garlic
                     if (!this.auraImg && this.data.auraSprite) {
                         this.auraImg = new Image();
@@ -858,10 +972,10 @@
                             this.orbitImg.src = this.data.orbitSprite;
                         }
                         if (this.orbitImg && this.orbitReady) {
-                            ctx.drawImage(this.orbitImg, x - 10 - camera.x, y - 15 - camera.y, 20, 30);
+                            ctx.drawImage(this.orbitImg, x - 20 - camera.x, y - 30 - camera.y, 40, 60);
                         } else {
                             ctx.fillStyle = 'saddlebrown';
-                            ctx.fillRect(x - 10 - camera.x, y - 15 - camera.y, 20, 30);
+                            ctx.fillRect(x - 20 - camera.x, y - 30 - camera.y, 40, 60);
                         }
                     }
                     break;
@@ -1076,7 +1190,7 @@
                         const angle = weapon.orbitAngle + (i * (2 * Math.PI / stats.amount));
                         const bookX = this.player.x + Math.cos(angle) * stats.orbitRadius;
                         const bookY = this.player.y + Math.sin(angle) * stats.orbitRadius;
-                        const book = { BBox: { left: bookX-10, right: bookX+10, top: bookY-15, bottom: bookY+15 }};
+                        const book = { BBox: { left: bookX-20, right: bookX+20, top: bookY-30, bottom: bookY+30 }};
                         
                         this.enemies.forEach(enemy => {
                             if(enemy.active && this.checkCollision(book, enemy)) {
@@ -1451,7 +1565,7 @@
     // --- Particle Class for FX ---
     class Particle extends GameObject {
         constructor(x, y, color) {
-            super(x, y, randInt(2,5), randInt(2,5));
+            super(x, y, randInt(4,10), randInt(4,10));
             this.lifespan = 1;
             this.vx = rand(-100, 100);
             this.vy = rand(-100, 100);
