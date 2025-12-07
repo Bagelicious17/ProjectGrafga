@@ -119,6 +119,53 @@
             box-shadow: 0 0 15px rgba(231, 76, 60, 0.5);
         }
 
+        /* Character selection portraits */
+        #character-selection .char-portrait {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            border: 2px solid #555;
+            border-radius: 8px;
+            background: #222;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin: 0 auto 10px;
+        }
+        #character-selection .char-portrait img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            image-rendering: pixelated;
+        }
+        #character-selection .weapon-icon {
+            position: absolute;
+            right: 8px;
+            bottom: 8px;
+            width: 56px;
+            height: 56px;
+            border: 2px solid #777;
+            border-radius: 8px;
+            background: rgba(20,20,20,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        #character-selection .weapon-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            image-rendering: pixelated;
+        }
+        #character-selection .weapon-icon .fallback {
+            width: 80%;
+            height: 80%;
+            background: #e74c3c;
+            border-radius: 6px;
+        }
+
         .upgrade-card h3 {
             color: #2ecc71; /* Green for upgrade title */
             margin-bottom: 10px;
@@ -158,6 +205,19 @@
          #game-over-stats p span:first-child {
             color: #95a5a6;
         }
+
+        /* Almanac */
+        .almanac-content { display: flex; gap: 20px; width: 90%; max-width: 1000px; }
+        .almanac-left { flex: 1; display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+        .almanac-right { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+        .almanac-card { background: rgba(40, 40, 40, 0.9); border: 2px solid #555; border-radius: 8px; padding: 8px; width: 120px; cursor: pointer; transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease; }
+        .almanac-card:hover { border-color: #e74c3c; transform: scale(1.05); box-shadow: 0 0 15px rgba(231, 76, 60, 0.5); }
+        .almanac-card.selected { border-color: #e74c3c; box-shadow: 0 0 15px rgba(231, 76, 60, 0.5); }
+        .almanac-thumb { width: 100%; aspect-ratio: 1 / 1; border: 2px solid #777; background: #222; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 6px; }
+        .almanac-thumb img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+        #almanac-anim-container { width: 300px; height: 300px; border: 2px solid #777; background: #222; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+        #almanac-anim-canvas { width: 100%; height: 100%; image-rendering: pixelated; }
+        #almanac-lore { max-width: 600px; background: rgba(20, 20, 20, 0.8); padding: 12px; border: 2px solid #333; border-radius: 8px; color: #bdc3c7; }
     </style>
 </head>
 <body>
@@ -171,6 +231,7 @@
             <p>Survive for 30 minutes against endless hordes.</p>
             <p><strong>Controls:</strong> WASD or Arrow Keys to move.</p>
             <button id="start-game-button">Choose Character</button>
+            <button id="almanac-button">Almanac</button>
         </div>
 
         <!-- Character Selection -->
@@ -179,6 +240,22 @@
             <div id="character-options" style="display: flex;">
                 <!-- Character cards will be injected by JS -->
             </div>
+        </div>
+
+        <!-- Almanac Screen -->
+        <div id="almanac-screen" class="ui-overlay hidden">
+            <h2>Almanac</h2>
+            <div id="almanac-content" class="almanac-content">
+                <div id="almanac-left" class="almanac-left"></div>
+                <div id="almanac-right" class="almanac-right">
+                    <h3 id="almanac-title"></h3>
+                    <div id="almanac-anim-container">
+                        <canvas id="almanac-anim-canvas" width="256" height="256"></canvas>
+                    </div>
+                    <div id="almanac-lore"></div>
+                </div>
+            </div>
+            <button id="almanac-back-button">Back</button>
         </div>
 
         <!-- Pause Screen -->
@@ -221,6 +298,8 @@
         XP_GROWTH: 1.5,
         MAGNET_RADIUS: 100,
         GAME_DURATION: 30 * 60 * 1000, // 30 minutes in ms
+        CHEST_SPAWN_INTERVAL: 25, // seconds
+        CHEST_MAX_ON_FIELD: 3,
     };
 
     // --- ASSET AND DATA DEFINITIONS ---
@@ -250,6 +329,14 @@
             animations: { walk: { src: 'assets/sprites/characters/Ranger_walk.png', frameWidth: 64, frameHeight: 64, frames: 4, fps: 10 } },
             stats: { speed: 220, maxHealth: 90, magnet: 1, luck: 1.2 },
             startingWeapon: "Axe"
+        },
+        {
+            name: "Bagas",
+            spriteColor: '#e67e22',
+            sprite: 'assets/sprites/characters/Bagas.png',
+            animations: { walk: { src: 'assets/sprites/characters/Bagas_walk.png', frameWidth: 64, frameHeight: 64, frames: 4, fps: 8 } },
+            stats: { speed: 210, maxHealth: 90, magnet: 1, luck: 1 },
+            startingWeapon: "Bouncer"
         }
     ];
 
@@ -292,6 +379,19 @@
                 { area: 1.2, info: "+20% Area" },
                 { cooldown: 2.0, info: "-20% Cooldown" },
                 { amount: 3, info: "+1 Projectile" },
+            ]
+        },
+        Bouncer: {
+            name: "Bouncer",
+            type: 'projectile',
+            projectile: { speed: 280, size: 22, pierce: 0, lifespan: 2, sprite: 'assets/sprites/projectiles/bouncer.png', bounce: true },
+            levels: [
+                { cooldown: 1, damage: 12, amount: 2, lifespan: 2, info: "Bouncing shots." },
+                { lifespan: 2.5, info: "+0.5s Duration" },
+                { damage: 18, info: "+6 Damage" },
+                { amount: 3, info: "+1 Projectile" },
+                { lifespan: 3.5, info: "+1.0s Duration" },
+                { damage: 28, info: "+10 Damage" }
             ]
         },
         Garlic: {
@@ -365,6 +465,13 @@
                 { value: 0.7, info: "-10% Cooldown" }, { value: 0.6, info: "-10% Cooldown" }
             ]
         },
+        Damage: {
+            name: "Damage",
+            levels: [
+                { value: 1.1, info: "+10% Damage" }, { value: 1.2, info: "+10% Damage" },
+                { value: 1.3, info: "+10% Damage" }, { value: 1.4, info: "+10% Damage" }
+            ]
+        },
     };
 
     // Enemies
@@ -372,22 +479,34 @@
         Bat: {
             name: 'Bat',
             health: 10, speed: 100, damage: 5, size: 40,
-            xp: 2, spriteColor: '#8e44ad', sprite: 'assets/sprites/enemies/Bat.png', count: 0
+            xp: 2, spriteColor: '#8e44ad', sprite: 'assets/sprites/enemies/Bat.png',
+            animations: { walk: { src: 'assets/sprites/enemies/Bat_walk.png', frameWidth: 64, frameHeight: 64, frames: 4, fps: 10 } },
+            lore: 'Fast but fragile; swarms in numbers during the night.',
+            count: 0
         },
         Skeleton: {
             name: 'Skeleton',
             health: 30, speed: 60, damage: 10, size: 50,
-            xp: 5, spriteColor: '#bdc3c7', sprite: 'assets/sprites/enemies/Skeleton.png', count: 0
+            xp: 5, spriteColor: '#bdc3c7', sprite: 'assets/sprites/enemies/Skeleton.png',
+            animations: { walk: { src: 'assets/sprites/enemies/Skeleton_walk.png', frameWidth: 64, frameHeight: 64, frames: 4, fps: 8 } },
+            lore: 'Reanimated bones; slow but relentless and hard-hitting.',
+            count: 0
         },
         Goblin: {
             name: 'Goblin',
             health: 20, speed: 150, damage: 8, size: 36,
-            xp: 3, spriteColor: '#16a085', sprite: 'assets/sprites/enemies/Goblin.png', count: 0
+            xp: 3, spriteColor: '#16a085', sprite: 'assets/sprites/enemies/Goblin.png',
+            animations: { walk: { src: 'assets/sprites/enemies/Goblin_walk.png', frameWidth: 64, frameHeight: 64, frames: 4, fps: 10 } },
+            lore: 'Mischievous and quick; favors ambushes and hit-and-run.',
+            count: 0
         },
         Boss: {
             name: 'Boss',
             health: 500, speed: 40, damage: 25, size: 100,
-            xp: 100, spriteColor: '#c0392b', sprite: 'assets/sprites/enemies/Boss.png', count: 0
+            xp: 100, spriteColor: '#c0392b', sprite: 'assets/sprites/enemies/Boss.png',
+            animations: { walk: { src: 'assets/sprites/enemies/Boss_walk.png', frameWidth: 96, frameHeight: 96, frames: 6, fps: 6 } },
+            lore: 'An ancient terror; slow, unyielding, and immensely durable.',
+            count: 0
         }
     };
     
@@ -455,6 +574,7 @@
         get magnet() { return CONFIG.MAGNET_RADIUS * this.baseStats.magnet * (this.passives.Magnet?.value || 1); }
         get luck() { return this.baseStats.luck * (this.passives.Luck?.value || 1); }
         get cooldownModifier() { return this.passives.Cooldown?.value || 1; }
+        get damageModifier() { return this.passives.Damage?.value || 1; }
 
         addWeapon(weaponName) {
             if (this.weapons.some(w => w.name === weaponName)) return;
@@ -625,6 +745,10 @@
             this.damage = type.damage;
             this.xp = type.xp;
             this.spriteColor = type.spriteColor;
+            this.facing = 1;
+            this.moving = false;
+            this.animFrame = 0;
+            this.animTimer = 0;
         }
 
         update(dt, player) {
@@ -635,6 +759,24 @@
             if (dist > 0) {
                 this.x += (dx / dist) * this.speed * dt;
                 this.y += (dy / dist) * this.speed * dt;
+                if (dx !== 0) this.facing = dx > 0 ? 1 : -1;
+            }
+            this.moving = dist > 1;
+
+            if (this.type && this.type.animations && this.type.animations.walk) {
+                const cfg = this.type.animations.walk;
+                const fps = cfg.fps || 8;
+                if (this.moving) {
+                    this.animTimer += dt;
+                    const frameTime = 1 / fps;
+                    while (this.animTimer >= frameTime) {
+                        this.animTimer -= frameTime;
+                        this.animFrame = (this.animFrame + 1) % (cfg.frames || 1);
+                    }
+                } else {
+                    this.animFrame = 0;
+                    this.animTimer = 0;
+                }
             }
         }
         
@@ -653,6 +795,29 @@
         draw(ctx, camera) {
             const px = this.x - this.width / 2 - camera.x;
             const py = this.y - this.height / 2 - camera.y;
+            const cfg = this.type && this.type.animations && this.type.animations.walk;
+            if (cfg && cfg.src) {
+                if (!this.animImg) {
+                    this.animImg = new Image();
+                    this.animReady = false;
+                    this.animImg.onload = () => { this.animReady = true; };
+                    this.animImg.src = cfg.src;
+                }
+                if (this.animImg && this.animReady) {
+                    const fw = cfg.frameWidth || this.width;
+                    const fh = cfg.frameHeight || this.height;
+                    const frames = cfg.frames || 1;
+                    const frameIndex = Math.min(this.animFrame || 0, frames - 1);
+                    const sx = (frameIndex % frames) * fw;
+                    const sy = 0;
+                    ctx.save();
+                    ctx.translate(px + this.width / 2, py + this.height / 2);
+                    ctx.scale(this.facing, 1);
+                    ctx.drawImage(this.animImg, sx, sy, fw, fh, -this.width / 2, -this.height / 2, this.width, this.height);
+                    ctx.restore();
+                    return;
+                }
+            }
 
             if (!this.spriteImg && this.type && this.type.sprite) {
                 this.spriteImg = new Image();
@@ -660,7 +825,6 @@
                 this.spriteImg.onload = () => { this.spriteReady = true; };
                 this.spriteImg.src = this.type.sprite;
             }
-
             if (this.spriteImg && this.spriteReady) {
                 ctx.drawImage(this.spriteImg, px, py, this.width, this.height);
             } else {
@@ -719,6 +883,67 @@
         }
     }
     
+    // --- CHEST AND FOOD ITEMS ---
+    class ChestBox extends GameObject {
+        constructor(x, y) {
+            super(x, y, 60, 60);
+            this.opened = false;
+        }
+        get spritePath() { return 'assets/sprites/items/chest.png'; }
+        open() {
+            if (this.opened || !this.active) return;
+            this.opened = true;
+            this.active = false;
+            if (typeof game?.spawnFood === 'function') {
+                game.spawnFood(this.x, this.y);
+            }
+            if (typeof game?.createParticles === 'function') {
+                game.createParticles(this.x, this.y, 'gold', 12);
+            }
+        }
+        draw(ctx, camera) {
+            const px = this.x - this.width / 2 - camera.x;
+            const py = this.y - this.height / 2 - camera.y;
+            if (!this.spriteImg) {
+                this.spriteImg = new Image();
+                this.spriteReady = false;
+                this.spriteImg.onload = () => { this.spriteReady = true; };
+                this.spriteImg.src = this.spritePath;
+            }
+            if (this.spriteImg && this.spriteReady) {
+                ctx.drawImage(this.spriteImg, px, py, this.width, this.height);
+            } else {
+                ctx.fillStyle = '#8b5a2b'; // brown chest
+                ctx.fillRect(px, py, this.width, this.height);
+                ctx.fillStyle = '#d4af37'; // golden band
+                ctx.fillRect(px, py + this.height/2 - 6, this.width, 12);
+            }
+        }
+    }
+
+    class FoodItem extends GameObject {
+        constructor(x, y) {
+            super(x, y, 30, 30);
+        }
+        get spritePath() { return 'assets/sprites/items/food.png'; }
+        draw(ctx, camera) {
+            const px = this.x - this.width / 2 - camera.x;
+            const py = this.y - this.height / 2 - camera.y;
+            if (!this.spriteImg) {
+                this.spriteImg = new Image();
+                this.spriteReady = false;
+                this.spriteImg.onload = () => { this.spriteReady = true; };
+                this.spriteImg.src = this.spritePath;
+            }
+            if (this.spriteImg && this.spriteReady) {
+                ctx.drawImage(this.spriteImg, px, py, this.width, this.height);
+            } else {
+                ctx.fillStyle = 'limegreen';
+                ctx.fillRect(px, py, this.width, this.height);
+            }
+        }
+    }
+
     class Projectile extends GameObject {
         constructor(x, y, target, weaponStats) {
             super(x, y, weaponStats.size, weaponStats.size);
@@ -746,6 +971,16 @@
             }
             this.x += this.vx * dt;
             this.y += this.vy * dt;
+            // Bounce off screen edges (relative to camera viewport)
+            if (this.stats.bounce && typeof game !== 'undefined' && game.canvas && game.camera) {
+                const hx = this.width / 2, hy = this.height / 2;
+                const left = game.camera.x, right = game.camera.x + game.canvas.width;
+                const top = game.camera.y, bottom = game.camera.y + game.canvas.height;
+                if (this.x - hx < left) { this.x = left + hx; this.vx = Math.abs(this.vx); }
+                else if (this.x + hx > right) { this.x = right - hx; this.vx = -Math.abs(this.vx); }
+                if (this.y - hy < top) { this.y = top + hy; this.vy = Math.abs(this.vy); }
+                else if (this.y + hy > bottom) { this.y = bottom - hy; this.vy = -Math.abs(this.vy); }
+            }
             this.lifespan -= dt;
             if (this.lifespan <= 0) this.active = false;
         }
@@ -834,7 +1069,9 @@
                 Object.assign(stats, this.data.levels[i]);
             }
             // Apply global modifiers
-            stats.cooldown *= this.player.cooldownModifier;
+            if (stats.cooldown != null) stats.cooldown *= this.player.cooldownModifier;
+            if (stats.damage != null) stats.damage *= this.player.damageModifier;
+            if (stats.dps != null) stats.dps *= this.player.damageModifier;
             return stats;
         }
 
@@ -903,7 +1140,11 @@
                      for(let i=0; i<stats.amount; i++) {
                         const targetX = nearestEnemy.x + rand(-50, 50);
                         const targetY = nearestEnemy.y + rand(-50, 50);
-                        game.addDamageArea(new DamageArea(targetX, targetY, this.data.areaData));
+                        const areaStats = { ...this.data.areaData };
+                        if (stats.duration != null) areaStats.duration = stats.duration;
+                        if (stats.size != null) areaStats.size = stats.size;
+                        if (stats.dps != null) areaStats.dps = stats.dps;
+                        game.addDamageArea(new DamageArea(targetX, targetY, areaStats));
                     }
                     break;
                 }
@@ -1005,6 +1246,8 @@
             this.xpGems = [];
             this.damageAreas = [];
             this.particles = [];
+            this.chests = [];
+            this.foods = [];
             this.backgroundLayers = [
                 { src: 'assets/backgrounds/ground.png',        img: null, ready: false, tileSize: 128, parallax: 1.0 }
             ];
@@ -1013,6 +1256,7 @@
             this.gameTimer = 0;
             this.spawnTimer = 0;
             this.totalKills = 0;
+            this.chestTimer = 0;
             
             this.initUI();
             this.initInput();
@@ -1025,10 +1269,13 @@
             this.xpGems = [];
             this.damageAreas = [];
             this.particles = [];
+            this.chests = [];
+            this.foods = [];
             
             this.gameTimer = 0;
             this.spawnTimer = 0;
             this.totalKills = 0;
+            this.chestTimer = 0;
             
             // Reset enemy counts
             Object.values(ENEMIES).forEach(e => e.count = 0);
@@ -1087,12 +1334,22 @@
             // Enemy Spawning
             this.updateSpawning(dt);
 
+            // Chest Spawning
+            this.chestTimer += dt;
+            if (this.chestTimer >= (CONFIG.CHEST_SPAWN_INTERVAL || 25)) {
+                if ((this.chests?.length || 0) < (CONFIG.CHEST_MAX_ON_FIELD || 3)) {
+                    this.spawnChest();
+                }
+                this.chestTimer = 0;
+            }
+
             // Update Game Objects
             this.enemies.forEach(e => e.update(dt, this.player));
             this.projectiles.forEach(p => p.update(dt));
             this.xpGems.forEach(gem => gem.update(dt, this.player));
             this.damageAreas.forEach(area => area.update(dt));
             this.particles.forEach(p => p.update(dt));
+            this.foods.forEach(f => f.update?.(dt, this.player));
 
             // Collisions
             this.handleCollisions();
@@ -1162,6 +1419,16 @@
                     }
                 });
             });
+
+            // Projectiles vs Chests
+            this.projectiles.forEach(proj => {
+                this.chests.forEach(chest => {
+                    if (proj.active && chest.active && this.checkCollision(proj, chest)) {
+                        chest.open();
+                        proj.onHit({});
+                    }
+                });
+            });
             
             // Aura/Orbit weapons vs Enemies
             const activeWeapons = this.player.weapons;
@@ -1185,6 +1452,15 @@
                             }
                          }
                     });
+                    // Aura can open chests too
+                    this.chests.forEach(chest => {
+                        if (chest.active) {
+                            const dist = Math.hypot(this.player.x - chest.x, this.player.y - chest.y);
+                            if (dist < auraRadius + chest.width / 2) {
+                                chest.open();
+                            }
+                        }
+                    });
                 } else if (weapon.data.type === 'orbit') {
                      for (let i = 0; i < stats.amount; i++) {
                         const angle = weapon.orbitAngle + (i * (2 * Math.PI / stats.amount));
@@ -1198,6 +1474,11 @@
                                     enemy.takeDamage(stats.damage);
                                     enemy.lastOrbitHit = this.gameTimer;
                                 }
+                            }
+                        });
+                        this.chests.forEach(chest => {
+                            if(chest.active && this.checkCollision(book, chest)) {
+                                chest.open();
                             }
                         });
                      }
@@ -1215,6 +1496,25 @@
                         }
                     }
                 });
+                // Holy water areas also open chests
+                this.chests.forEach(chest => {
+                    if (area.active && chest.active) {
+                        const dist = Math.hypot(area.x - chest.x, area.y - chest.y);
+                        if (dist < area.width/2 + chest.width/2) {
+                            chest.open();
+                        }
+                    }
+                });
+            });
+
+            // Player vs Food (pickup)
+            this.foods.forEach(food => {
+                if (food.active && this.checkCollision(this.player, food)) {
+                    const heal = this.player.maxHealth * 0.15;
+                    this.player.health = Math.min(this.player.maxHealth, this.player.health + heal);
+                    food.active = false;
+                    this.createParticles(food.x, food.y, 'lime', 10);
+                }
             });
         }
         
@@ -1234,6 +1534,13 @@
                      }
                 }
             });
+
+            // Hit chests too
+            this.chests.forEach(chest => {
+                if(chest.active && this.checkCollision(attackBox, chest)) {
+                    chest.open();
+                }
+            });
         }
         
         enemyKilled(enemy) {
@@ -1249,6 +1556,8 @@
             this.xpGems = this.xpGems.filter(gem => gem.active);
             this.damageAreas = this.damageAreas.filter(area => area.active);
             this.particles = this.particles.filter(p => p.active);
+            this.chests = this.chests.filter(c => c.active);
+            this.foods = this.foods.filter(f => f.active);
         }
         
         drawBackground() {
@@ -1296,6 +1605,8 @@
             
             // Draw game objects relative to camera
             this.damageAreas.forEach(area => area.draw(this.ctx, this.camera));
+            this.chests.forEach(c => c.draw(this.ctx, this.camera));
+            this.foods.forEach(f => f.draw(this.ctx, this.camera));
             this.xpGems.forEach(gem => gem.draw(this.ctx, this.camera));
             this.enemies.forEach(e => e.draw(this.ctx, this.camera));
             this.projectiles.forEach(p => p.draw(this.ctx, this.camera));
@@ -1343,6 +1654,16 @@
         // --- Object Management ---
         addProjectile(p) { this.projectiles.push(p); }
         addDamageArea(a) { this.damageAreas.push(a); }
+        spawnChest() {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = Math.max(this.canvas.width, this.canvas.height) * 0.75;
+            const x = this.player.x + Math.cos(angle) * radius;
+            const y = this.player.y + Math.sin(angle) * radius;
+            this.chests.push(new ChestBox(x, y));
+        }
+        spawnFood(x, y) {
+            this.foods.push(new FoodItem(x, y));
+        }
         findNearestEnemy(x, y) {
             let nearest = null;
             let nearestDist = Infinity;
@@ -1370,12 +1691,18 @@
                 'pause-screen': document.getElementById('pause-screen'),
                 'level-up-screen': document.getElementById('level-up-screen'),
                 'game-over-screen': document.getElementById('game-over-screen'),
+                'almanac-screen': document.getElementById('almanac-screen'),
             };
 
             document.getElementById('start-game-button').addEventListener('click', () => {
                 this.state = 'character-selection';
                 this.updateCharacterSelectionUI();
                 this.showScreen('character-selection');
+            });
+            document.getElementById('almanac-button').addEventListener('click', () => {
+                this.state = 'almanac';
+                this.updateAlmanacUI();
+                this.showScreen('almanac-screen');
             });
             
             document.getElementById('resume-button').addEventListener('click', () => {
@@ -1393,6 +1720,11 @@
                  this.updateCharacterSelectionUI();
                  this.showScreen('character-selection');
             });
+            document.getElementById('almanac-back-button').addEventListener('click', () => {
+                this.stopAlmanacPreview();
+                this.state = 'main-menu';
+                this.showScreen('main-menu');
+            });
             
             this.canvas.width = window.innerWidth * 0.9;
             this.canvas.height = window.innerHeight * 0.9;
@@ -1406,6 +1738,9 @@
             if(screenName !== 'none' && this.uiScreens[screenName]) {
                 this.uiScreens[screenName].classList.remove('hidden');
             }
+            if (screenName !== 'almanac-screen') {
+                this.stopAlmanacPreview?.();
+            }
         }
         
         updateCharacterSelectionUI() {
@@ -1414,17 +1749,149 @@
             CHARACTERS.forEach(char => {
                 const card = document.createElement('div');
                 card.className = 'char-card';
-                card.innerHTML = `
-                    <h3>${char.name}</h3>
-                    <p>Starts with: ${char.startingWeapon}</p>
-                    <ul>
-                        <li>HP: ${char.stats.maxHealth}</li>
-                        <li>Speed: ${char.stats.speed}</li>
-                    </ul>
-                `;
+                // Portrait
+                const portrait = document.createElement('div');
+                portrait.className = 'char-portrait';
+                const heroImg = new Image();
+                heroImg.src = char.sprite || '';
+                heroImg.alt = char.name;
+                portrait.appendChild(heroImg);
+                // Weapon icon
+                const w = WEAPONS[char.startingWeapon] || {};
+                const weaponIcon = document.createElement('div');
+                weaponIcon.className = 'weapon-icon';
+                const weaponSprite = w.attackSprite || (w.projectile && w.projectile.sprite) || w.auraSprite || w.orbitSprite || '';
+                if (weaponSprite) {
+                    const wImg = new Image();
+                    wImg.src = weaponSprite;
+                    weaponIcon.appendChild(wImg);
+                } else {
+                    const fallback = document.createElement('div');
+                    fallback.className = 'fallback';
+                    weaponIcon.appendChild(fallback);
+                }
+                portrait.appendChild(weaponIcon);
+
+                // Text and stats
+                const nameEl = document.createElement('h3');
+                nameEl.textContent = char.name;
+                const startsEl = document.createElement('p');
+                startsEl.textContent = `Starts with: ${char.startingWeapon}`;
+                const list = document.createElement('ul');
+                const hp = document.createElement('li'); hp.textContent = `HP: ${char.stats.maxHealth}`;
+                const sp = document.createElement('li'); sp.textContent = `Speed: ${char.stats.speed}`;
+                list.appendChild(hp); list.appendChild(sp);
+
+                card.appendChild(portrait);
+                card.appendChild(nameEl);
+                card.appendChild(startsEl);
+                card.appendChild(list);
                 card.onclick = () => this.startGame(char);
                 container.appendChild(card);
             });
+        }
+
+        updateAlmanacUI() {
+            const left = document.getElementById('almanac-left');
+            left.innerHTML = '';
+            const keys = Object.keys(ENEMIES);
+            keys.forEach(key => {
+                const data = ENEMIES[key];
+                const card = document.createElement('div');
+                card.className = 'almanac-card';
+                const thumb = document.createElement('div');
+                thumb.className = 'almanac-thumb';
+                thumb.style.background = data.spriteColor || '#555';
+                const img = new Image();
+                img.src = data.sprite;
+                img.onerror = () => {};
+                thumb.appendChild(img);
+                const name = document.createElement('div');
+                name.style.marginTop = '6px';
+                name.textContent = data.name;
+                name.style.color = '#ecf0f1';
+                card.appendChild(thumb);
+                card.appendChild(name);
+                card.onclick = () => this.showAlmanacEntry(key, card);
+                left.appendChild(card);
+            });
+            if (keys.length > 0) {
+                const firstCard = left.querySelector('.almanac-card');
+                if (firstCard) firstCard.click();
+            }
+        }
+
+        showAlmanacEntry(key, cardEl) {
+            const left = document.getElementById('almanac-left');
+            left.querySelectorAll('.almanac-card').forEach(c => c.classList.remove('selected'));
+            if (cardEl) cardEl.classList.add('selected');
+            const data = ENEMIES[key];
+            const title = document.getElementById('almanac-title');
+            const lore = document.getElementById('almanac-lore');
+            title.textContent = data.name;
+            lore.textContent = data.lore || 'No lore available.';
+            this.startAlmanacPreview(data);
+        }
+
+        startAlmanacPreview(enemyData) {
+            this.stopAlmanacPreview();
+            const canvas = document.getElementById('almanac-anim-canvas');
+            const ctx = canvas.getContext('2d');
+            if (ctx) { ctx.imageSmoothingEnabled = false; }
+            const anim = enemyData.animations && enemyData.animations.walk;
+            const img = new Image();
+            const hasSheet = !!(anim && anim.src);
+            const src = hasSheet ? anim.src : enemyData.sprite;
+            const fps = hasSheet ? (anim.fps || 8) : 1;
+            const frames = hasSheet ? (anim.frames || 1) : 1;
+            const fw = hasSheet ? anim.frameWidth : null;
+            const fh = hasSheet ? anim.frameHeight : null;
+            const state = { img, hasSheet, fps, frames, frame: 0, timer: 0, fw, fh };
+            img.onload = () => {
+                if (!state.hasSheet) {
+                    state.fw = img.width;
+                    state.fh = img.height;
+                }
+                const loop = (t) => {
+                    if (!this.almanacAnim) return;
+                    if (!this.almanacLastT) this.almanacLastT = t;
+                    const dt = (t - this.almanacLastT) / 1000;
+                    this.almanacLastT = t;
+                    state.timer += dt;
+                    const frameTime = 1 / Math.max(1, state.fps);
+                    if (state.hasSheet) {
+                        while (state.timer >= frameTime) {
+                            state.timer -= frameTime;
+                            state.frame = (state.frame + 1) % state.frames;
+                        }
+                    }
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    const scale = Math.min(canvas.width / state.fw, canvas.height / state.fh);
+                    const dw = state.fw * scale;
+                    const dh = state.fh * scale;
+                    const dx = (canvas.width - dw) / 2;
+                    const dy = (canvas.height - dh) / 2;
+                    const sx = state.hasSheet ? state.frame * state.fw : 0;
+                    const sy = 0;
+                    ctx.drawImage(state.img, sx, sy, state.fw, state.fh, dx, dy, dw, dh);
+                    this.almanacAnimRAF = requestAnimationFrame(loop);
+                };
+                this.almanacAnimRAF = requestAnimationFrame(loop);
+            };
+            img.src = src;
+            this.almanacAnim = state;
+        }
+
+        stopAlmanacPreview() {
+            if (this.almanacAnimRAF) cancelAnimationFrame(this.almanacAnimRAF);
+            this.almanacAnimRAF = null;
+            this.almanacAnim = null;
+            this.almanacLastT = null;
+            const canvas = document.getElementById('almanac-anim-canvas');
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                ctx && ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
         }
         
         generateLevelUpOptions() {
