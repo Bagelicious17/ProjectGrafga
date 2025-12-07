@@ -218,12 +218,35 @@
         #almanac-anim-container { width: 300px; height: 300px; border: 2px solid #777; background: #222; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
         #almanac-anim-canvas { width: 100%; height: 100%; image-rendering: pixelated; }
         #almanac-lore { max-width: 600px; background: rgba(20, 20, 20, 0.8); padding: 12px; border: 2px solid #333; border-radius: 8px; color: #bdc3c7; }
+
+        /* In-game options (top-right) */
+        .play-options {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            z-index: 6;
+            background: rgba(0,0,0,0.4);
+            border: 2px solid #444;
+            border-radius: 8px;
+            padding: 8px 10px;
+            color: #fff;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .play-options label { display: flex; align-items: center; gap: 6px; font-size: 14px; }
     </style>
 </head>
 <body>
 
     <div id="game-container">
         <canvas id="game-canvas"></canvas>
+
+        <!-- In-game Options (visible only while playing) -->
+        <div id="play-options" class="play-options hidden">
+            <label><input id="toggle-char-hitbox" type="checkbox"> Character hitbox</label>
+            <label><input id="toggle-weapon-hitbox" type="checkbox"> Weapon hitbox</label>
+        </div>
 
         <!-- Main Menu -->
         <div id="main-menu" class="ui-overlay">
@@ -300,6 +323,7 @@
         GAME_DURATION: 30 * 60 * 1000, // 30 minutes in ms
         CHEST_SPAWN_INTERVAL: 25, // seconds
         CHEST_MAX_ON_FIELD: 3,
+        PROPS_COUNT: 200,
     };
 
     // --- ASSET AND DATA DEFINITIONS ---
@@ -473,6 +497,15 @@
             ]
         },
     };
+
+    // Decorative props (PNG templates)
+    const PROP_TEMPLATES = [
+        { name: 'Tree',  src: 'assets/props/tree.png',  width: 96, height: 128 },
+        { name: 'Rock',  src: 'assets/props/rock.png',  width: 72, height: 56 },
+        { name: 'Torch', src: 'assets/props/torch.png', width: 32, height: 64 },
+        { name: 'Bush',  src: 'assets/props/bush.png',  width: 64, height: 48 },
+        { name: 'Crate', src: 'assets/props/crate.png', width: 48, height: 48 },
+    ];
 
     // Enemies
     const ENEMIES = {
@@ -944,6 +977,32 @@
         }
     }
 
+    // Decorative world prop (static)
+    class Prop extends GameObject {
+        constructor(x, y, tpl) {
+            super(x, y, tpl.width, tpl.height);
+            this.src = tpl.src;
+            this.img = null; this.ready = false;
+        }
+        draw(ctx, camera) {
+            const px = this.x - this.width / 2 - camera.x;
+            const py = this.y - this.height / 2 - camera.y;
+            if (!this.img && this.src) {
+                this.img = new Image();
+                this.img.onload = () => { this.ready = true; };
+                this.img.src = this.src;
+            }
+            if (this.img && this.ready) {
+                ctx.drawImage(this.img, px, py, this.width, this.height);
+            } else {
+                ctx.fillStyle = '#2c3e50';
+                ctx.fillRect(px, py, this.width, this.height);
+                ctx.strokeStyle = '#34495e';
+                ctx.strokeRect(px, py, this.width, this.height);
+            }
+        }
+    }
+
     class Projectile extends GameObject {
         constructor(x, y, target, weaponStats) {
             super(x, y, weaponStats.size, weaponStats.size);
@@ -1248,6 +1307,8 @@
             this.particles = [];
             this.chests = [];
             this.foods = [];
+            this.props = [];
+            this.props = [];
             this.backgroundLayers = [
                 { src: 'assets/backgrounds/ground.png',        img: null, ready: false, tileSize: 128, parallax: 1.0 }
             ];
@@ -1257,6 +1318,8 @@
             this.spawnTimer = 0;
             this.totalKills = 0;
             this.chestTimer = 0;
+            this.debug = { charHitbox: false, weaponHitbox: false };
+            this.hitboxImg = null; this.hitboxReady = false;
             
             this.initUI();
             this.initInput();
@@ -1282,6 +1345,8 @@
             
             // FIX: Reset spawn wave timers
             SPAWN_WAVES.forEach(wave => delete wave.lastSpawn);
+            // Generate decorative props
+            if (typeof this.initProps === 'function') this.initProps();
         }
         
         startGame(characterData) {
@@ -1604,6 +1669,7 @@
             if (!this.player || this.state === 'main-menu' || this.state === 'character-selection') return;
             
             // Draw game objects relative to camera
+            this.drawProps();
             this.damageAreas.forEach(area => area.draw(this.ctx, this.camera));
             this.chests.forEach(c => c.draw(this.ctx, this.camera));
             this.foods.forEach(f => f.draw(this.ctx, this.camera));
@@ -1614,6 +1680,7 @@
             this.player.draw(this.ctx, this.camera);
             this.particles.forEach(p => p.draw(this.ctx, this.camera));
             
+            this.drawHitboxes();
             this.drawHUD();
         }
         
@@ -1650,7 +1717,99 @@
             ctx.fillText(`Kills: ${this.totalKills}`, this.canvas.width - 15, 30);
             ctx.textAlign = 'left'; // Reset
         }
-        
+
+        // --- Props and Debug ---
+        initProps() {
+            const count = CONFIG.PROPS_COUNT || 200;
+            const radius = Math.max(this.canvas.width, this.canvas.height) * 5;
+            const cx = (this.player?.x || this.canvas.width/2);
+            const cy = (this.player?.y || this.canvas.height/2);
+            for (let i = 0; i < count; i++) {
+                const tpl = choice(PROP_TEMPLATES);
+                const angle = Math.random() * Math.PI * 2;
+                const r = Math.random() * radius;
+                const x = cx + Math.cos(angle) * r;
+                const y = cy + Math.sin(angle) * r;
+                this.props.push(new Prop(x, y, tpl));
+            }
+        }
+        drawProps() {
+            const cam = this.camera; const w = this.canvas.width; const h = this.canvas.height;
+            const margin = 200;
+            this.props.forEach(p => {
+                const px = p.x - cam.x; const py = p.y - cam.y;
+                if (px + p.width/2 < -margin || px - p.width/2 > w + margin || py + p.height/2 < -margin || py - p.height/2 > h + margin) return;
+                p.draw(this.ctx, this.camera);
+            });
+        }
+        drawHitboxes() {
+            if (!(this.debug.charHitbox || this.debug.weaponHitbox)) return;
+            if (this.state !== 'playing' && this.state !== 'paused') return;
+            const cam = this.camera;
+            if (this.debug.charHitbox && this.player) {
+                this.drawRectHitbox(this.player, 'rgba(255,0,0,0.9)');
+            }
+            if (this.debug.weaponHitbox) {
+                // Projectiles
+                this.projectiles.forEach(p => this.drawRectHitbox(p, 'rgba(255,255,0,0.9)'));
+                // Damage areas (holy water)
+                this.damageAreas.forEach(a => this.drawCircleHitbox(a.x - cam.x, a.y - cam.y, a.width/2, 'rgba(0,255,255,0.9)'));
+                // Aura / Orbit / Whip
+                this.player.weapons.forEach(w => {
+                    const stats = w.getStats();
+                    if (w.data.type === 'aura') {
+                        this.drawCircleHitbox(this.player.x - cam.x, this.player.y - cam.y, stats.area, 'rgba(0,255,0,0.9)');
+                    } else if (w.data.type === 'orbit') {
+                        for (let i = 0; i < stats.amount; i++) {
+                            const angle = w.orbitAngle + (i * (2 * Math.PI / stats.amount));
+                            const x = this.player.x + Math.cos(angle) * stats.orbitRadius;
+                            const y = this.player.y + Math.sin(angle) * stats.orbitRadius;
+                            const box = { x, y, width: 40, height: 60 };
+                            this.drawRectHitbox(box, 'rgba(0,128,255,0.9)');
+                        }
+                    } else if (w.data.type === 'attack') {
+                        (w.attackEffects||[]).forEach(e => {
+                            const box = { x: e.x, y: e.y, width: e.w, height: e.h };
+                            this.drawRectHitbox(box, 'rgba(255,128,0,0.9)');
+                        });
+                    }
+                });
+            }
+        }
+        drawRectHitbox(obj, color) {
+            const ctx = this.ctx; const cam = this.camera;
+            const x = obj.x - (obj.width||0)/2 - cam.x;
+            const y = obj.y - (obj.height||0)/2 - cam.y;
+            const w = obj.width||0; const h = obj.height||0;
+            // Optional overlay texture: assets/ui/hitbox_rect.png
+            if (!this.hitboxImg) {
+                this.hitboxImg = new Image();
+                this.hitboxImg.onload = () => { this.hitboxReady = true; };
+                this.hitboxImg.src = 'assets/ui/hitbox_rect.png';
+            }
+            if (this.hitboxReady) {
+                ctx.drawImage(this.hitboxImg, x, y, w, h);
+            } else {
+                ctx.save();
+                ctx.setLineDash([6,4]);
+                ctx.strokeStyle = color || 'red';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x, y, w, h);
+                ctx.restore();
+            }
+        }
+        drawCircleHitbox(sx, sy, r, color) {
+            const ctx = this.ctx;
+            ctx.save();
+            ctx.setLineDash([6,4]);
+            ctx.strokeStyle = color || 'red';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(sx, sy, r, 0, Math.PI*2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
         // --- Object Management ---
         addProjectile(p) { this.projectiles.push(p); }
         addDamageArea(a) { this.damageAreas.push(a); }
@@ -1725,7 +1884,12 @@
                 this.state = 'main-menu';
                 this.showScreen('main-menu');
             });
-            
+            // Hitbox checkbox listeners
+            const charCb = document.getElementById('toggle-char-hitbox');
+            const wepCb = document.getElementById('toggle-weapon-hitbox');
+            if (charCb) charCb.addEventListener('change', (e) => { this.debug.charHitbox = e.target.checked; });
+            if (wepCb) wepCb.addEventListener('change', (e) => { this.debug.weaponHitbox = e.target.checked; });
+
             this.canvas.width = window.innerWidth * 0.9;
             this.canvas.height = window.innerHeight * 0.9;
             const container = document.getElementById('game-container');
@@ -1740,6 +1904,11 @@
             }
             if (screenName !== 'almanac-screen') {
                 this.stopAlmanacPreview?.();
+            }
+            const opts = document.getElementById('play-options');
+            if (opts) {
+                if (this.state === 'playing' || this.state === 'paused') opts.classList.remove('hidden');
+                else opts.classList.add('hidden');
             }
         }
         
