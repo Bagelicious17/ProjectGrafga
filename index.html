@@ -486,15 +486,15 @@
         </div>
 
         <div id="level-up-screen" class="ui-overlay hidden">
-            <h2 style="color:#f1c40f">Level Up!</h2>
-            <p>Choose an upgrade:</p>
+            <h2 style="color:#f1c40f">Naik Level!</h2>
+            <p>Pilih Sembako:</p>
             <div id="upgrade-options">
                 <!-- Upgrades generated via JS -->
             </div>
         </div>
         
         <div id="game-over-screen" class="ui-overlay hidden">
-            <h2 style="color:#c0392b">Game Over</h2>
+            <h2 style="color:#c0392b">Skill Issue</h2>
             <div id="game-over-stats">
                  <!-- Stats via JS -->
             </div>
@@ -535,7 +535,7 @@
             themeColor: "#c0392b" // Red
         },
         {
-            name: "Mage",
+            name: "Suryanti",
             spriteColor: 'aqua',
             sprite: 'assets/sprites/characters/Mage.png',
             animations: { walk: { src: 'assets/sprites/characters/Mage_walk.png', frameWidth: 64, frameHeight: 64, frames: 4, fps: 8 } },
@@ -544,7 +544,7 @@
             themeColor: "#3498db" // Blue
         },
         {
-            name: "Ranger",
+            name: "Adit",
             spriteColor: '#2ecc71',
             sprite: 'assets/sprites/characters/Ranger.png',
             animations: { walk: { src: 'assets/sprites/characters/Ranger_walk.png', frameWidth: 64, frameHeight: 64, frames: 4, fps: 10 } },
@@ -553,7 +553,7 @@
             themeColor: "#2ecc71" // Green
         },
         {
-            name: "Bagas",
+            name: "Bagas Dribble",
             spriteColor: '#e67e22',
             sprite: 'assets/sprites/characters/Bagas.png',
             animations: { walk: { src: 'assets/sprites/characters/Bagas_walk.png', frameWidth: 64, frameHeight: 64, frames: 4, fps: 8 } },
@@ -579,7 +579,7 @@
             ]
         },
         MagicWand: {
-            name: "Magic Wand",
+            name: "Petir Magic",
             type: 'projectile',
             projectile: { speed: 300, size: 20, pierce: 0, lifespan: 1.5, sprite: 'assets/sprites/projectiles/magic_bolt.png' },
             levels: [
@@ -592,7 +592,7 @@
             ]
         },
         Axe: {
-            name: "Axe",
+            name: "Kapak Suci",
             type: 'projectile',
             projectile: { speed: 200, size: 30, pierce: 2, arc: true, lifespan: 2, sprite: 'assets/sprites/projectiles/axe.png' },
             levels: [
@@ -605,7 +605,7 @@
             ]
         },
         Bouncer: {
-            name: "Bouncer",
+            name: "Bola  Memantul",
             type: 'projectile',
             projectile: { speed: 280, size: 22, pierce: 0, lifespan: 2, sprite: 'assets/sprites/projectiles/bouncer.png', bounce: true },
             levels: [
@@ -618,7 +618,7 @@
             ]
         },
         Garlic: {
-            name: "Garlic",
+            name: "Bawang Wibu",
             type: 'aura',
             auraSprite: 'assets/sprites/effects/garlic_aura.png',
             levels: [
@@ -631,7 +631,7 @@
             ]
         },
         HolyWater: {
-            name: "Holy Water",
+            name: "Air Suci Kyiai",
             type: 'area',
             areaData: { duration: 3, size: 160, dps: 10 },
             levels: [
@@ -644,7 +644,7 @@
             ]
         },
         SpinningBook: {
-            name: "Spinning Book",
+            name: "Buku Memutar",
             type: 'orbit',
             orbitSprite: 'assets/sprites/weapons/spinning_book.png',
             levels: [
@@ -661,21 +661,21 @@
     // Passive Upgrades
     const PASSIVES = {
         Health: {
-            name: "Max Health",
+            name: "Batas Nyawa Tambah agak Dikit",
             levels: [
                 { value: 1.1, info: "+10% Max Health" }, { value: 1.2, info: "+10% Max Health" },
                 { value: 1.3, info: "+10% Max Health" }, { value: 1.4, info: "+10% Max Health" }
             ]
         },
         Speed: {
-            name: "Move Speed",
+            name: "Gerak Cepat",
             levels: [
                 { value: 1.1, info: "+10% Move Speed" }, { value: 1.2, info: "+10% Move Speed" },
                 { value: 1.3, info: "+10% Move Speed" }, { value: 1.4, info: "+10% Move Speed" }
             ]
         },
         Magnet: {
-            name: "Pickup Radius",
+            name: "Jarak Ngambil Exp",
             levels: [
                 { value: 1.25, info: "+25% Pickup Radius" }, { value: 1.5, info: "+25% Pickup Radius" },
                 { value: 1.75, info: "+25% Pickup Radius" }, { value: 2.0, info: "+25% Pickup Radius" }
@@ -689,7 +689,7 @@
             ]
         },
         Damage: {
-            name: "Damage",
+            name: "Menambah Damage Semua Weapon",
             levels: [
                 { value: 1.1, info: "+10% Damage" }, { value: 1.2, info: "+10% Damage" },
                 { value: 1.3, info: "+10% Damage" }, { value: 1.4, info: "+10% Damage" }
@@ -703,7 +703,6 @@
         { name: 'Rock',  src: 'assets/props/rock.png',  width: 72, height: 56 },
         { name: 'Torch', src: 'assets/props/torch.png', width: 32, height: 64 },
         { name: 'Bush',  src: 'assets/props/bush.png',  width: 64, height: 48 },
-        { name: 'Crate', src: 'assets/props/crate.png', width: 48, height: 48 },
     ];
 
     // Enemies
@@ -713,7 +712,7 @@
             health: 10, speed: 100, damage: 5, size: 40,
             xp: 2, spriteColor: '#8e44ad', sprite: 'assets/sprites/enemies/Bat.png',
             animations: { walk: { src: 'assets/sprites/enemies/Bat_walk.png', frameWidth: 64, frameHeight: 64, frames: 4, fps: 10 } },
-            lore: 'Fast but fragile; swarms in numbers during the night.',
+            lore: 'Hasil eksperimen gagal dari sebuah perusahaan bioteknologi yang mencoba menciptakan drone pengintai organik (bio-drone). Mereka mengganti sistem sonar kelelawar dengan satu lensa optik canggih yang menyatu dengan otak.',
             count: 0
         },
         Skeleton: {
@@ -721,7 +720,7 @@
             health: 30, speed: 60, damage: 10, size: 50,
             xp: 5, spriteColor: '#bdc3c7', sprite: 'assets/sprites/enemies/Skeleton.png',
             animations: { walk: { src: 'assets/sprites/enemies/Skeleton_walk.png', frameWidth: 64, frameHeight: 64, frames: 4, fps: 8 } },
-            lore: 'Reanimated bones; slow but relentless and hard-hitting.',
+            lore: 'Bukanlah satu kerangka biasa, melainkan sisa-sisa dari Royal Scribe (Penulis Kerajaan) kuno yang terobsesi dengan pencatatan sejarah. Semasa hidup, ia takut akan kematian karena itu berarti ia berhenti mencatat. Melalui ritual terlarang, ia mengikat jiwanya pada tulang-belulangnya sendiri.',
             count: 0
         },
         Goblin: {
@@ -729,15 +728,15 @@
             health: 20, speed: 150, damage: 8, size: 36,
             xp: 3, spriteColor: '#16a085', sprite: 'assets/sprites/enemies/Goblin.png',
             animations: { walk: { src: 'assets/sprites/enemies/Goblin_walk.png', frameWidth: 64, frameHeight: 64, frames: 4, fps: 10 } },
-            lore: 'Mischievous and quick; favors ambushes and hit-and-run.',
+            lore: 'The Scraptooth adalah kasta terendah dari suku Goblin yang dibuang ke lapisan dungeon/hutan yang lebih dalam karena terlalu tamak, bahkan bagi standar Goblin. Mereka tidak tertarik pada emas murni, melainkan terobsesi pada logam berkilau yang menempel pada tubuh manusia (gesper sabuk, pelindung lutut, kancing baju zirah).',
             count: 0
         },
         Boss: {
             name: 'Boss',
             health: 500, speed: 40, damage: 25, size: 100,
             xp: 100, spriteColor: '#c0392b', sprite: 'assets/sprites/enemies/Boss.png',
-            animations: { walk: { src: 'assets/sprites/enemies/Boss_walk.png', frameWidth: 96, frameHeight: 96, frames: 6, fps: 6 } },
-            lore: 'An ancient terror; slow, unyielding, and immensely durable.',
+            animations: { walk: { src: 'assets/sprites/enemies/Boss_walk.png', frameWidth: 64, frameHeight: 64, frames: 4, fps: 10 } },
+            lore: 'Dulunya adalah seorang pesulap jalanan yang sangat berbakat namun miskin. Ia terobsesi dengan trik "menghilang" yang sempurna. Dalam keputusasaannya mencari ketenaran, ia membuat perjanjian dengan entitas kegelapan untuk mendapatkan kemampuan menjadi bayangan sejati.',
             count: 0
         }
     };
