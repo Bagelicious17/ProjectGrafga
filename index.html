@@ -3,17 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arena Survival Game</title>
+    <title>Fauzan Advanture</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    
     <style>
         /* --- Basic Setup --- */
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            user-select: none;
         }
 
         body {
-            font-family: 'Courier New', Courier, monospace;
+            /* Menggunakan Font dari Code Kedua */
+            font-family: 'Press Start 2P', 'Courier New', monospace;
             background-color: #111;
             color: #eee;
             display: flex;
@@ -49,7 +53,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background-color: rgba(0, 0, 0, 0.75);
+            background-color: rgba(0, 0, 0, 0.85); /* Sedikit lebih gelap agar tulisan jelas */
             color: #fff;
             text-align: center;
             z-index: 10;
@@ -57,51 +61,193 @@
             padding: 20px;
         }
 
+        /* Update: Allow scrolling in overlays if content is too tall (like Almanac) */
+        #almanac-screen {
+            justify-content: center; /* Center vertically unless overflowing */
+            overflow-y: auto; /* Enable scroll if needed */
+        }
+
         .hidden {
-            display: none;
+            display: none !important;
         }
 
         /* --- Text and Titles --- */
         h1, h2 {
-            text-shadow: 3px 3px 0px #c0392b;
+            text-shadow: 4px 4px 0px #922b21;
             margin-bottom: 20px;
             text-transform: uppercase;
+            line-height: 1.5;
         }
 
-        h1 { font-size: 3rem; }
-        h2 { font-size: 2rem; }
-        p { margin-bottom: 10px; font-size: 1.1rem; }
+        h1 { font-size: 2.5rem; color: #e74c3c; }
+        h2 { font-size: 1.5rem; color: #f1c40f; margin-top: 10px;}
+        p { margin-bottom: 10px; font-size: 0.8rem; line-height: 1.5; }
 
         /* --- Buttons --- */
         button {
             background: #e74c3c;
             color: #fff;
-            border: 2px solid #c0392b;
-            padding: 15px 30px;
+            border: 4px solid #c0392b;
+            padding: 15px 25px;
             font-family: inherit;
-            font-size: 1.2rem;
+            font-size: 1rem;
             cursor: pointer;
             text-transform: uppercase;
-            border-radius: 5px;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 0 #c0392b;
+            box-shadow: 0 6px 0 #7c1e15;
             margin-top: 20px;
+            transition: transform 0.1s;
         }
 
         button:hover {
             background: #ff6b5a;
             transform: translateY(-2px);
-            box-shadow: 0 6px 0 #c0392b;
+            margin-top: 18px; margin-bottom: 2px;
         }
         
         button:active {
-            transform: translateY(2px);
-            box-shadow: 0 2px 0 #c0392b;
+            transform: translateY(6px);
+            box-shadow: 0 0 0 #7c1e15;
+            margin-top: 26px; margin-bottom: -6px;
         }
 
-        /* --- Character and Level-Up Screens --- */
-        #character-selection .char-card,
-        #level-up-screen .upgrade-card {
+        /* =========================================
+            STYLE KHUSUS: CHARACTER SELECTION SCREEN
+            (Diambil dari Code Kedua)
+            ========================================= */
+        
+        /* Background Khusus Menu Select */
+        #character-selection {
+            background-color: #050505;
+            overflow: hidden; /* Penting untuk animasi obor */
+        }
+        
+        .bg-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #0a0a0c;
+            background-image: 
+                linear-gradient(335deg, rgba(20,20,25,0.6) 23px, transparent 23px),
+                linear-gradient(155deg, rgba(30,30,40,0.6) 23px, transparent 23px);
+            background-size: 58px 58px;
+            z-index: -10;
+        }
+
+        .bg-torch {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                radial-gradient(circle at 5% 50%, rgba(255, 100, 0, 0.3), transparent 40%),
+                radial-gradient(circle at 95% 50%, rgba(255, 100, 0, 0.3), transparent 40%);
+            z-index: -9;
+            animation: torchFlicker 3s infinite alternate;
+        }
+
+        .bg-vignette {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, transparent 30%, #000 95%);
+            z-index: -5;
+            pointer-events: none;
+        }
+
+        @keyframes torchFlicker { 0% { opacity: 0.8; } 100% { opacity: 1; } }
+
+        /* Container Kartu */
+        .card-container {
+            display: flex; gap: 20px; z-index: 5;
+            align-items: flex-end; justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        /* Animasi Wrapper Kartu */
+        .card-wrapper {
+            position: relative;
+            display: flex; flex-direction: column; align-items: center;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .card-wrapper:hover {
+            transform: translateY(-20px) scale(1.05); z-index: 20;
+        }
+
+        /* Desain Fisik Kartu */
+        .card {
+            width: 200px; height: 320px;
+            background: linear-gradient(180deg, #3c3430 0%, #1e1a18 100%);
+            border-radius: 10px;
+            position: relative;
+            display: flex; flex-direction: column; align-items: center; padding: 10px;
+            border: 4px solid #8c7a6b;
+            box-shadow: inset 0 0 0 3px #110d0a, 0 0 0 4px #4a3f38, 0 20px 40px rgba(0,0,0,0.9);
+            cursor: pointer; transition: all 0.3s ease;
+        }
+
+        /* Hover Glow Effect */
+        .card-wrapper:hover .card {
+            border-color: #ffb300 !important;
+            box-shadow: inset 0 0 0 3px #110d0a, 0 0 0 5px #ffb300, 0 0 40px rgba(255, 140, 0, 0.5);
+        }
+
+        /* Portrait Area */
+        .portrait-bg {
+            width: 100%; height: 140px;
+            background-color: #2a2320;
+            background-image: radial-gradient(circle, #3c322e 10%, transparent 10%);
+            background-size: 10px 10px;
+            border: 3px inset #1a1512; border-radius: 6px;
+            margin-bottom: 10px;
+            display: flex; justify-content: center; align-items: center;
+            position: relative; overflow: hidden;
+        }
+
+        /* Character Sprite Animation */
+        .character-sprite {
+            width: 90%; height: 90%;
+            image-rendering: pixelated; object-fit: contain;
+            filter: drop-shadow(5px 5px 2px rgba(0,0,0,0.6));
+            animation: idleFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes idleFloat {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-5px) scale(1.02); }
+        }
+
+        /* Weapon Icon Box */
+        .weapon-box {
+            position: absolute; bottom: 5px; right: 5px;
+            width: 36px; height: 36px; background: #1a1512;
+            border: 2px solid #7c6a5b; border-radius: 4px;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 2px 2px 5px #000; z-index: 5;
+        }
+        .weapon-sprite { width: 80%; height: 80%; image-rendering: pixelated; object-fit: contain; }
+
+        /* Typography Kartu */
+        .char-name { font-size: 0.9rem; margin-bottom: 5px; color: #ffebd0; text-shadow: 2px 2px 0 #000; text-transform: uppercase; text-align: center;}
+        .char-desc { font-size: 0.5rem; color: #a89f94; margin-bottom: 15px; font-family: monospace; font-weight: bold; text-align: center; }
+
+        /* Stats Bars */
+        .stats-container { width: 100%; padding: 0 5px; }
+        .stat-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.55rem; margin-bottom: 6px; color: #c7b299; text-transform: uppercase; }
+        .stat-bar-container { width: 50%; height: 6px; background: #0f0c0a; border: 2px solid #3c322e; }
+        .stat-fill { height: 100%; background: #c0392b; width: 0%; }
+        .stat-fill.speed { background: #e1b12c; }
+
+        /* Pedestal & Gem */
+        .pedestal {
+            margin-top: -6px; width: 190px; height: 35px;
+            background: #5c4e44; border: 4px solid #2e2724;
+            clip-path: polygon(12% 0, 88% 0, 100% 100%, 0% 100%);
+            display: flex; justify-content: center; align-items: center;
+            z-index: -1; position: relative;
+        }
+        .gem {
+            width: 14px; height: 14px; background: #c0392b;
+            transform: rotate(45deg); border: 2px solid #1a0f0a;
+            box-shadow: inset 2px 2px 4px rgba(255,255,255,0.6), 0 0 10px #c0392b;
+        }
+
+        /* --- Level-Up & Almanac Styles (Existing modified) --- */
+        #level-up-screen .upgrade-card,
+        .almanac-card {
             background: rgba(40, 40, 40, 0.9);
             border: 2px solid #555;
             padding: 20px;
@@ -112,71 +258,26 @@
             width: 250px;
         }
 
-        #character-selection .char-card:hover,
-        #level-up-screen .upgrade-card:hover {
+        #level-up-screen .upgrade-card:hover,
+        .almanac-card:hover {
             border-color: #e74c3c;
             transform: scale(1.05);
             box-shadow: 0 0 15px rgba(231, 76, 60, 0.5);
         }
 
-        /* Character selection portraits */
-        #character-selection .char-portrait {
-            position: relative;
-            width: 220px;
-            height: 220px;
-            border: 2px solid #555;
-            border-radius: 8px;
-            background: #222;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            margin: 0 auto 10px;
-        }
-        #character-selection .char-portrait img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            image-rendering: pixelated;
-        }
-        #character-selection .weapon-icon {
-            position: absolute;
-            right: 8px;
-            bottom: 8px;
-            width: 56px;
-            height: 56px;
-            border: 2px solid #777;
-            border-radius: 8px;
-            background: rgba(20,20,20,0.9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-        }
-        #character-selection .weapon-icon img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            image-rendering: pixelated;
-        }
-        #character-selection .weapon-icon .fallback {
-            width: 80%;
-            height: 80%;
-            background: #e74c3c;
-            border-radius: 6px;
-        }
-
         .upgrade-card h3 {
             color: #2ecc71; /* Green for upgrade title */
             margin-bottom: 10px;
+            font-size: 1rem;
         }
         
         .upgrade-card .level {
              color: #f1c40f; /* Yellow for level */
+             font-size: 0.8rem;
         }
 
         .upgrade-card p {
-            font-size: 0.9rem;
+            font-size: 0.7rem;
             color: #bdc3c7;
         }
 
@@ -198,7 +299,7 @@
         }
 
         #game-over-stats p {
-            font-size: 1.2rem;
+            font-size: 1rem;
             display: flex;
             justify-content: space-between;
         }
@@ -206,23 +307,119 @@
             color: #95a5a6;
         }
 
-        /* Almanac */
-        .almanac-content { display: flex; gap: 20px; width: 90%; max-width: 1000px; }
-        .almanac-left { flex: 1; display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
-        .almanac-right { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 12px; }
-        .almanac-card { background: rgba(40, 40, 40, 0.9); border: 2px solid #555; border-radius: 8px; padding: 8px; width: 120px; cursor: pointer; transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease; }
-        .almanac-card:hover { border-color: #e74c3c; transform: scale(1.05); box-shadow: 0 0 15px rgba(231, 76, 60, 0.5); }
-        .almanac-card.selected { border-color: #e74c3c; box-shadow: 0 0 15px rgba(231, 76, 60, 0.5); }
-        .almanac-thumb { width: 100%; aspect-ratio: 1 / 1; border: 2px solid #777; background: #222; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 6px; }
-        .almanac-thumb img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
-        #almanac-anim-container { width: 300px; height: 300px; border: 2px solid #777; background: #222; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
-        #almanac-anim-canvas { width: 100%; height: 100%; image-rendering: pixelated; }
-        #almanac-lore { max-width: 600px; background: rgba(20, 20, 20, 0.8); padding: 12px; border: 2px solid #333; border-radius: 8px; color: #bdc3c7; }
+        /* Almanac - RESIZED to fit screen */
+        .almanac-content {
+            display: flex;
+            gap: 15px;
+            width: 95%;
+            max-width: 900px; /* Reduced width */
+            padding: 15px;
+            background: radial-gradient(circle at top, rgba(70, 40, 20, 0.35), rgba(0, 0, 0, 0.95));
+            border-radius: 12px;
+            border: 2px solid #444;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.8);
+            align-items: flex-start; /* Align top */
+            max-height: 80vh; /* Prevent it from being taller than screen */
+        }
+        .almanac-left {
+            flex: 1;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            padding: 8px;
+            background: rgba(10, 10, 15, 0.95);
+            border-radius: 10px;
+            border: 2px solid #333;
+            max-height: 350px; /* Reduced Height to fit screen */
+            overflow-y: auto;
+        }
+        .almanac-right {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(12, 12, 18, 0.98);
+            border-radius: 10px;
+            border: 2px solid #555;
+        }
+        .almanac-card {
+            background: radial-gradient(circle at top, rgba(90, 90, 90, 0.95), rgba(30, 30, 30, 0.98));
+            border: 2px solid #555;
+            padding: 6px;
+            margin: 2px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100px; /* Smaller card */
+            box-shadow: 0 4px 0 #222;
+        }
+        .almanac-card:hover {
+            border-color: #f1c40f;
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 0 10px rgba(241, 196, 15, 0.7);
+        }
+        .almanac-card.selected {
+            border-color: #f1c40f;
+            box-shadow: 0 0 10px rgba(241, 196, 15, 0.8);
+        }
+        .almanac-thumb {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border: 2px solid #777;
+            background: #222;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border-radius: 6px;
+        }
+        .almanac-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            image-rendering: pixelated;
+        }
+        /* Resized Animation Container */
+        #almanac-anim-container {
+            width: 180px; /* Much smaller */
+            height: 180px;
+            border: 3px solid #777;
+            background: radial-gradient(circle at center, #222 0%, #111 70%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+        }
+        #almanac-anim-canvas {
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+        }
+        #almanac-lore {
+            max-width: 100%;
+            background: linear-gradient(135deg, rgba(30, 22, 15, 0.97), rgba(10, 8, 5, 0.99));
+            padding: 10px;
+            border: 2px solid #8e6e3b;
+            border-radius: 10px;
+            color: #e0d2b0;
+            text-align: left;
+            font-size: 0.65rem; /* Smaller font for lore */
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
+        }
+        #almanac-title {
+            font-size: 1rem;
+            color: #e67e22;
+            margin: 0;
+        }
 
         /* In-game options (top-right) */
         .play-options {
             position: absolute;
-            top: 8px;
+            bottom: 8px;
             right: 8px;
             z-index: 6;
             background: rgba(0,0,0,0.4);
@@ -234,7 +431,7 @@
             gap: 12px;
             align-items: center;
         }
-        .play-options label { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+        .play-options label { display: flex; align-items: center; gap: 6px; font-size: 10px; }
     </style>
 </head>
 <body>
@@ -242,30 +439,31 @@
     <div id="game-container">
         <canvas id="game-canvas"></canvas>
 
-        <!-- In-game Options (visible only while playing) -->
         <div id="play-options" class="play-options hidden">
             <label><input id="toggle-char-hitbox" type="checkbox"> Character hitbox</label>
             <label><input id="toggle-weapon-hitbox" type="checkbox"> Weapon hitbox</label>
         </div>
 
-        <!-- Main Menu -->
         <div id="main-menu" class="ui-overlay">
-            <h1>Arena Survival</h1>
-            <p>Survive for 30 minutes against endless hordes.</p>
-            <p><strong>Controls:</strong> WASD or Arrow Keys to move.</p>
-            <button id="start-game-button">Choose Character</button>
+            <h1>Fauzan Adventure</h1>
+            <p>Selamatkan Fauzan Dari Makhluk Kegelapan</p>
+            <p><strong>Kontrol:</strong> WASD atau anak panah.</p>
+            <button id="start-game-button">Start Game</button>
             <button id="almanac-button">Almanac</button>
         </div>
 
-        <!-- Character Selection -->
         <div id="character-selection" class="ui-overlay hidden">
-            <h2>Select Your Survivor</h2>
-            <div id="character-options" style="display: flex;">
-                <!-- Character cards will be injected by JS -->
+            <div class="bg-layer"></div>
+            <div class="bg-torch"></div>
+            <div class="bg-vignette"></div>
+
+            <h1 style="z-index: 20;">Pilih Korbanmu!</h1>
+            
+            <div id="character-options" class="card-container">
+                <!-- Cards generated via JS -->
             </div>
         </div>
 
-        <!-- Almanac Screen -->
         <div id="almanac-screen" class="ui-overlay hidden">
             <h2>Almanac</h2>
             <div id="almanac-content" class="almanac-content">
@@ -278,30 +476,27 @@
                     <div id="almanac-lore"></div>
                 </div>
             </div>
-            <button id="almanac-back-button">Back</button>
+            <button id="almanac-back-button" style="padding: 10px 20px; font-size: 0.8rem;">Back</button>
         </div>
 
-        <!-- Pause Screen -->
         <div id="pause-screen" class="ui-overlay hidden">
             <h2>Paused</h2>
             <button id="resume-button">Resume</button>
             <button id="quit-button">Quit to Menu</button>
         </div>
 
-        <!-- Level Up Screen -->
         <div id="level-up-screen" class="ui-overlay hidden">
-            <h2>Level Up!</h2>
+            <h2 style="color:#f1c40f">Level Up!</h2>
             <p>Choose an upgrade:</p>
             <div id="upgrade-options">
-                <!-- Upgrade cards will be injected by JS -->
+                <!-- Upgrades generated via JS -->
             </div>
         </div>
         
-        <!-- Game Over Screen -->
         <div id="game-over-screen" class="ui-overlay hidden">
-            <h2>Game Over</h2>
+            <h2 style="color:#c0392b">Game Over</h2>
             <div id="game-over-stats">
-                 <!-- Stats will be injected by JS -->
+                 <!-- Stats via JS -->
             </div>
             <button id="restart-button">Play Again</button>
         </div>
@@ -328,15 +523,16 @@
 
     // --- ASSET AND DATA DEFINITIONS ---
 
-    // Characters
+    // Characters (UPDATED with themeColor for the UI)
     const CHARACTERS = [
         {
-            name: "Knight",
+            name: "Fauzan",
             spriteColor: 'silver',
-            sprite: 'assets/sprites/characters/Knight.png',
-            animations: { walk: { src: 'assets/sprites/characters/Knight_walk.png', frameWidth: 64, frameHeight: 64, frames: 4, fps: 8 } },
+            sprite: 'assets/sprites/characters/Fauzan.png',
+            animations: { walk: { src: 'assets/sprites/characters/Fauzan_walk.png', frameWidth: 64, frameHeight: 64, frames: 4, fps: 8 } },
             stats: { speed: 200, maxHealth: 100, magnet: 1, luck: 1 },
-            startingWeapon: "Whip"
+            startingWeapon: "Sword",
+            themeColor: "#c0392b" // Red
         },
         {
             name: "Mage",
@@ -344,7 +540,8 @@
             sprite: 'assets/sprites/characters/Mage.png',
             animations: { walk: { src: 'assets/sprites/characters/Mage_walk.png', frameWidth: 64, frameHeight: 64, frames: 4, fps: 8 } },
             stats: { speed: 180, maxHealth: 80, magnet: 1.2, luck: 1.1 },
-            startingWeapon: "MagicWand"
+            startingWeapon: "MagicWand",
+            themeColor: "#3498db" // Blue
         },
         {
             name: "Ranger",
@@ -352,7 +549,8 @@
             sprite: 'assets/sprites/characters/Ranger.png',
             animations: { walk: { src: 'assets/sprites/characters/Ranger_walk.png', frameWidth: 64, frameHeight: 64, frames: 4, fps: 10 } },
             stats: { speed: 220, maxHealth: 90, magnet: 1, luck: 1.2 },
-            startingWeapon: "Axe"
+            startingWeapon: "Axe",
+            themeColor: "#2ecc71" // Green
         },
         {
             name: "Bagas",
@@ -360,16 +558,17 @@
             sprite: 'assets/sprites/characters/Bagas.png',
             animations: { walk: { src: 'assets/sprites/characters/Bagas_walk.png', frameWidth: 64, frameHeight: 64, frames: 4, fps: 8 } },
             stats: { speed: 210, maxHealth: 90, magnet: 1, luck: 1 },
-            startingWeapon: "Bouncer"
+            startingWeapon: "Bouncer",
+            themeColor: "#e67e22" // Orange
         }
     ];
 
     // Weapons
     const WEAPONS = {
-        Whip: {
-            name: "Whip",
+        Sword: {
+            name: "Sword",
             type: 'attack',
-            attackSprite: 'assets/sprites/weapons/whip.png',
+            attackSprite: 'assets/sprites/weapons/sword.png',
             levels: [
                 { cooldown: 1.5, damage: 10, area: 1, amount: 1, info: "Attacks horizontally." },
                 { damage: 15, info: "+5 Damage" },
@@ -1195,8 +1394,8 @@
                     break;
                 }
                 case 'area': { // Holy Water
-                     if (!nearestEnemy) return;
-                     for(let i=0; i<stats.amount; i++) {
+                      if (!nearestEnemy) return;
+                      for(let i=0; i<stats.amount; i++) {
                         const targetX = nearestEnemy.x + rand(-50, 50);
                         const targetY = nearestEnemy.y + rand(-50, 50);
                         const areaStats = { ...this.data.areaData };
@@ -1216,11 +1415,11 @@
              const stats = this.getStats();
              switch(this.data.type) {
                  case 'attack': // Whip
-                    if (!this.whipImg && this.data.attackSprite) {
-                        this.whipImg = new Image();
-                        this.whipReady = false;
-                        this.whipImg.onload = () => { this.whipReady = true; };
-                        this.whipImg.src = this.data.attackSprite;
+                    if (!this.swordImg && this.data.attackSprite) {
+                        this.swordImg = new Image();
+                        this.swordReady = false;
+                        this.swordImg.onload = () => { this.swordReady = true; };
+                        this.swordImg.src = this.data.attackSprite;
                     }
                     if (this.attackEffects && this.attackEffects.length) {
                         this.attackEffects.forEach(e => {
@@ -1229,9 +1428,9 @@
                             ctx.save();
                             ctx.translate(cx, cy);
                             ctx.scale(e.dir, 1);
-                            if (this.whipImg && this.whipReady) {
+                            if (this.swordImg && this.swordReady) {
                                 ctx.globalAlpha = Math.max(0, Math.min(1, e.t / 0.12));
-                                ctx.drawImage(this.whipImg, -e.w / 2, -e.h / 2, e.w, e.h);
+                                ctx.drawImage(this.swordImg, -e.w / 2, -e.h / 2, e.w, e.h);
                             } else {
                                 ctx.globalAlpha = 0.3;
                                 ctx.fillStyle = 'white';
@@ -1310,7 +1509,7 @@
             this.props = [];
             this.props = [];
             this.backgroundLayers = [
-                { src: 'assets/backgrounds/ground.png',        img: null, ready: false, tileSize: 128, parallax: 1.0 }
+                { src: 'assets/backgrounds/ground.png',         img: null, ready: false, tileSize: 128, parallax: 1.0 }
             ];
             
             // Timers & Stats
@@ -1436,10 +1635,10 @@
              this.spawnTimer += dt;
              SPAWN_WAVES.forEach(wave => {
                  if (this.gameTimer >= wave.time && (!wave.lastSpawn || this.spawnTimer - wave.lastSpawn > wave.interval)) {
-                     for(let i=0; i<wave.count; i++) {
+                      for(let i=0; i<wave.count; i++) {
                         this.spawnEnemy(wave.enemy);
-                     }
-                     wave.lastSpawn = this.spawnTimer;
+                      }
+                      wave.lastSpawn = this.spawnTimer;
                  }
              });
         }
@@ -1502,7 +1701,7 @@
                 if (weapon.data.type === 'aura') {
                     const auraRadius = stats.area;
                     this.enemies.forEach(enemy => {
-                         if(enemy.active) {
+                          if(enemy.active) {
                             const dist = Math.hypot(this.player.x - enemy.x, this.player.y - enemy.y);
                             if(dist < auraRadius + enemy.width / 2) {
                                 // Simple time-based damage application to avoid instant death
@@ -1593,9 +1792,9 @@
             this.enemies.forEach(enemy => {
                 if(enemy.active && this.checkCollision(attackBox, enemy)) {
                     // Avoid hitting same enemy multiple times with one swing
-                     if(!enemy.lastHitByWhip || this.gameTimer - enemy.lastHitByWhip > 1) {
+                     if(!enemy.lastHitBySword || this.gameTimer - enemy.lastHitBySword > 1) {
                          enemy.takeDamage(damage);
-                         enemy.lastHitByWhip = this.gameTimer;
+                         enemy.lastHitBySword = this.gameTimer;
                      }
                 }
             });
@@ -1692,8 +1891,8 @@
             ctx.fillStyle = 'red';
             ctx.fillRect(10, 10, (this.player.health / this.player.maxHealth) * 200, 20);
             ctx.fillStyle = 'white';
-            ctx.font = "14px 'Courier New'";
-            ctx.fillText(`${Math.ceil(this.player.health)} / ${Math.ceil(this.player.maxHealth)}`, 15, 25);
+            ctx.font = "14px 'Press Start 2P'";
+            ctx.fillText(`${Math.ceil(this.player.health)}`, 220, 28);
             
             // XP Bar
             ctx.fillStyle = 'gray';
@@ -1701,14 +1900,14 @@
             ctx.fillStyle = 'cyan';
             ctx.fillRect(10, 35, (this.player.xp / this.player.xpToNextLevel) * (this.canvas.width - 20), 10);
             ctx.fillStyle = 'white';
-            ctx.font = "16px 'Courier New'";
-            ctx.fillText(`LVL: ${this.player.level}`, 15, 60);
+            ctx.font = "16px 'Press Start 2P'";
+            ctx.fillText(`LVL: ${this.player.level}`, 15, 70);
 
             // Timer
             const minutes = Math.floor(this.gameTimer / 60);
             const seconds = Math.floor(this.gameTimer % 60);
             const timerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            ctx.font = "24px 'Courier New'";
+            ctx.font = "24px 'Press Start 2P'";
             ctx.textAlign = 'center';
             ctx.fillText(timerText, this.canvas.width / 2, 30);
             
@@ -1855,7 +2054,7 @@
 
             document.getElementById('start-game-button').addEventListener('click', () => {
                 this.state = 'character-selection';
-                this.updateCharacterSelectionUI();
+                this.updateCharacterSelectionUI(); // Calling the updated UI function
                 this.showScreen('character-selection');
             });
             document.getElementById('almanac-button').addEventListener('click', () => {
@@ -1890,13 +2089,18 @@
             if (charCb) charCb.addEventListener('change', (e) => { this.debug.charHitbox = e.target.checked; });
             if (wepCb) wepCb.addEventListener('change', (e) => { this.debug.weaponHitbox = e.target.checked; });
 
+            this.resize();
+            window.addEventListener('resize', () => this.resize());
+        }
+        
+        resize() {
             this.canvas.width = window.innerWidth * 0.9;
             this.canvas.height = window.innerHeight * 0.9;
             const container = document.getElementById('game-container');
             container.style.width = `${this.canvas.width}px`;
             container.style.height = `${this.canvas.height}px`;
         }
-        
+
         showScreen(screenName) {
             Object.values(this.uiScreens).forEach(screen => screen.classList.add('hidden'));
             if(screenName !== 'none' && this.uiScreens[screenName]) {
@@ -1912,51 +2116,58 @@
             }
         }
         
+        // --- NEW CHARACTER SELECTION UI LOGIC ---
         updateCharacterSelectionUI() {
             const container = document.getElementById('character-options');
             container.innerHTML = '';
-            CHARACTERS.forEach(char => {
-                const card = document.createElement('div');
-                card.className = 'char-card';
-                // Portrait
-                const portrait = document.createElement('div');
-                portrait.className = 'char-portrait';
-                const heroImg = new Image();
-                heroImg.src = char.sprite || '';
-                heroImg.alt = char.name;
-                portrait.appendChild(heroImg);
-                // Weapon icon
-                const w = WEAPONS[char.startingWeapon] || {};
-                const weaponIcon = document.createElement('div');
-                weaponIcon.className = 'weapon-icon';
-                const weaponSprite = w.attackSprite || (w.projectile && w.projectile.sprite) || w.auraSprite || w.orbitSprite || '';
-                if (weaponSprite) {
-                    const wImg = new Image();
-                    wImg.src = weaponSprite;
-                    weaponIcon.appendChild(wImg);
-                } else {
-                    const fallback = document.createElement('div');
-                    fallback.className = 'fallback';
-                    weaponIcon.appendChild(fallback);
+
+            CHARACTERS.forEach((char, index) => {
+                const weaponData = WEAPONS[char.startingWeapon];
+                let weaponIconSrc = '';
+                if (weaponData) {
+                    if (weaponData.attackSprite) weaponIconSrc = weaponData.attackSprite;
+                    else if (weaponData.projectile && weaponData.projectile.sprite) weaponIconSrc = weaponData.projectile.sprite;
+                    else if (weaponData.auraSprite) weaponIconSrc = weaponData.auraSprite;
+                    else if (weaponData.orbitSprite) weaponIconSrc = weaponData.orbitSprite;
                 }
-                portrait.appendChild(weaponIcon);
+                
+                // Visual Stats
+                const maxHpVal = 120;
+                const maxSpdVal = 250;
+                const hpPercent = Math.min(100, (char.stats.maxHealth / maxHpVal) * 100);
+                const spdPercent = Math.min(100, (char.stats.speed / maxSpdVal) * 100);
+                let gemColor = char.themeColor || '#c0392b';
+                const animDelay = index * 0.2;
 
-                // Text and stats
-                const nameEl = document.createElement('h3');
-                nameEl.textContent = char.name;
-                const startsEl = document.createElement('p');
-                startsEl.textContent = `Starts with: ${char.startingWeapon}`;
-                const list = document.createElement('ul');
-                const hp = document.createElement('li'); hp.textContent = `HP: ${char.stats.maxHealth}`;
-                const sp = document.createElement('li'); sp.textContent = `Speed: ${char.stats.speed}`;
-                list.appendChild(hp); list.appendChild(sp);
+                const wrapper = document.createElement('div');
+                wrapper.className = 'card-wrapper';
+                
+                wrapper.innerHTML = `
+                    <div class="card" style="border-color: #8c7a6b;">
+                        <div class="portrait-bg">
+                            <img src="${char.sprite}" class="character-sprite" alt="${char.name}" style="animation-delay: ${animDelay}s">
+                            <div class="weapon-box">
+                                ${weaponIconSrc ? `<img src="${weaponIconSrc}" class="weapon-sprite" alt="Weapon">` : '<span style="color:white; font-size:10px;">?</span>'}
+                            </div>
+                        </div>
+                        <h3 class="char-name">${char.name}</h3>
+                        <p class="char-desc">Weapon: ${char.startingWeapon}</p>
+                        <div class="stats-container">
+                            <div class="stat-row">
+                                <span>HP: ${char.stats.maxHealth}</span>
+                                <div class="stat-bar-container"><div class="stat-fill" style="width: ${hpPercent}%"></div></div>
+                            </div>
+                            <div class="stat-row">
+                                <span>SPD: ${char.stats.speed}</span>
+                                <div class="stat-bar-container"><div class="stat-fill speed" style="width: ${spdPercent}%"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pedestal"><div class="gem" style="background:${gemColor}; box-shadow: 0 0 10px ${gemColor};"></div></div>
+                `;
 
-                card.appendChild(portrait);
-                card.appendChild(nameEl);
-                card.appendChild(startsEl);
-                card.appendChild(list);
-                card.onclick = () => this.startGame(char);
-                container.appendChild(card);
+                wrapper.onclick = () => this.startGame(char);
+                container.appendChild(wrapper);
             });
         }
 
@@ -1979,6 +2190,7 @@
                 name.style.marginTop = '6px';
                 name.textContent = data.name;
                 name.style.color = '#ecf0f1';
+                name.style.fontSize = '0.7rem';
                 card.appendChild(thumb);
                 card.appendChild(name);
                 card.onclick = () => this.showAlmanacEntry(key, card);
@@ -2016,6 +2228,7 @@
             const fw = hasSheet ? anim.frameWidth : null;
             const fh = hasSheet ? anim.frameHeight : null;
             const state = { img, hasSheet, fps, frames, frame: 0, timer: 0, fw, fh };
+            
             img.onload = () => {
                 if (!state.hasSheet) {
                     state.fw = img.width;
@@ -2047,6 +2260,15 @@
                 };
                 this.almanacAnimRAF = requestAnimationFrame(loop);
             };
+            
+            // Fallback for missing Boss_walk images so it doesn't break
+            img.onerror = () => {
+                if (state.hasSheet) {
+                    state.hasSheet = false; // Fallback to static mode
+                    state.img.src = enemyData.sprite; // Load static sprite instead
+                }
+            };
+            
             img.src = src;
             this.almanacAnim = state;
         }
@@ -2242,4 +2464,3 @@
     </script>
 </body>
 </html>
-
